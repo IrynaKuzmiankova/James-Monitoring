@@ -2,11 +2,9 @@
 	Accepted applications
 */
 
-
 select  loan_list.loan_id as Loan_ID
 		,loan_list.application_id as Application_ID
         ,loan_list.original_application_id as Original_Application_ID
-		-- ??? ,appl.parent_loan_application_id as Parent_Application_ID
 		,loan_list.issued_at as Date_of_Approval /* date of issue */
         ,loan_list.principal as Issued_Amount /* for top up = oustanding amount of previous loan + top up amount; for repayment = outstanding amount of previous loan*/
         ,loan_payment_first.actual_payment_date as First_payment_date
@@ -17,18 +15,14 @@ select  loan_list.loan_id as Loan_ID
         ,loan_type.name as Type_of_Loan
 from reporting.james_loans loan_list
 	join peachy_prod.type loan_type
-		on loan_list.loan_type_id = loan_type.id
-	join peachy_prod.loan_application appl
-		on loan_list.application_id = appl.id
+		on loan_list.loan_type_id = loan_type.id	
 	join peachy_prod.loan_payment loan_payment_first
 		on loan_list.loan_id = loan_payment_first.loan_id
 			and loan_payment_first.is_first_payment = 1
-            and loan_payment_first.deleted_at is null
-    
+            and loan_payment_first.deleted_at is null    
 group by loan_list.loan_id
 		,loan_list.application_id
 		,loan_list.original_application_id
-       -- ,appl.parent_loan_application_id 
 		,loan_list.issued_at
         ,loan_list.principal
         ,loan_payment_first.actual_payment_date

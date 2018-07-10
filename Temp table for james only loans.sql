@@ -26,6 +26,16 @@ as -- james this month part
 			and loan.declined_at is null
 			and loan.cancelled_at is null
 			and loan.issued_at is not null
+		group by loan.id
+				,loan.loan_type_id
+                ,loan.original_loan_application_id
+                ,ol.original_loan_application_id
+                ,loan.issued_at
+                ,loan.created_at
+				,loan.principal
+                ,loan.initial_interest
+                ,loan.annual_percentage_rate
+                ,loan.no_of_payments
 		union
 		-- james children part this month
 		select child_loan.id as loan_id

@@ -7,13 +7,10 @@ select  loan.loan_id as Loan_Id,
 		loan.application_id as Application_ID 
         ,loan.original_application_id as Original_Application_Id
 		,date_format(now(), '%Y-%m-01') as Reporting_Month
-        ,loan_payment.actual_payment_date as Actual_Payment_Date
-        ,loan_payment.paid_at_date as Paid_At_Date
 		,loan_type.name as Type_of_Loan
-        /* before payment made */
-        ,(ifnull(loan_payment.principal,0) + ifnull(loan_payment.balance_left,0)) as Outstanding_Principal
-
-        ,(ifnull(loan_payment.principal,0)
+        /* max outstanding principal is used in order to show principal before payment (so always the first payment of the month is chosen) */
+        ,max(loan_payment.principal + loan_payment.balance_left) as Outstanding_Principal
+        ,sum(ifnull(loan_payment.principal,0)
 			+ ifnull(loan_payment.interest,0)
             + ifnull(loan_payment.fees,0)
             + ifnull(loan_payment.penalty,0)
@@ -21,15 +18,15 @@ select  loan.loan_id as Loan_Id,
             )
 			as Due_payment
             
-        ,(loan_payment.principal_paid
+        ,sum(loan_payment.principal_paid
 			+ loan_payment.interest_paid
             + loan_payment.fees_paid
             + loan_payment.penalty_paid
 		 )
 		   as Monthly_payment
-		,(loan_payment.principal_paid) as Principal_Paid
-        ,(loan_payment.interest_paid) as Interest_Paid
-        ,(loan_payment.penalty - loan_payment.penalty_paid) as Late_Payment_Interest
+		,sum(loan_payment.principal_paid) as Principal_Paid
+        ,sum(loan_payment.interest_paid) as Interest_Paid
+        ,sum(loan_payment.penalty) as Late_Payment_Interest
 from reporting.james_loans loan
 	join peachy_prod.loan_application appl
 		on loan.application_id = appl.id
@@ -55,7 +52,6 @@ from reporting.james_loans loan
 group by loan.loan_id
 		,loan.application_id
         ,loan.original_application_id
-		,loan_payment.actual_payment_date
 		,date_format(now(), '%Y-%m-01')
 order by loan.application_id desc, loan.loan_id desc
 ;
