@@ -1,11 +1,6 @@
-/*
-JAMES monitoring scripts
-Monthly payments
-*/
-
-select  loan.loan_id as Loan_Id,
-		loan.application_id as Application_ID 
-        ,loan.original_application_id as Original_Application_Id
+select  loan.id as Loan_Id,
+		loan.original_loan_application_id as Application_ID 
+       -- ,loan.original_application_id as Original_Application_Id
 		,date_format(now(), '%Y-%m-01') as Reporting_Month
         ,loan_payment.actual_payment_date as Actual_Payment_Date
         ,loan_payment.paid_at_date as Paid_At_Date
@@ -52,13 +47,14 @@ select  loan.loan_id as Loan_Id,
 		,(loan_payment.principal_paid) as Principal_Paid
         ,(loan_payment.interest_paid) as Interest_Paid
         ,(loan_payment.penalty - loan_payment.penalty_paid) as Late_Payment_Interest
-from reporting.james_loans loan
+from -- reporting.james_loans loan
+	peachy_prod.loan
 	join peachy_prod.loan_application appl
-		on loan.application_id = appl.id
+		on loan.original_loan_application_id = appl.id
 	join peachy_prod.type loan_type
 		on loan.loan_type_id = loan_type.id
 	join peachy_prod.loan_payment 
-		on loan.loan_id = loan_payment.loan_id
+		on loan.id = loan_payment.loan_id
 		and loan_payment.deleted_at is null
         /* payment due date falls into reporting period, not paid or paid in the same reporting period  */
         AND ((loan_payment.actual_payment_date between date(date_add(subdate(current_date, 1), interval -1 month)) and subdate(current_date, 1)
@@ -85,24 +81,26 @@ from reporting.james_loans loan
     from peachy_prod.loan_payment lp
 			join ( select lp.loan_id, lp.actual_payment_date
 					from peachy_prod.loan_payment lp
-						join reporting.james_loans loan
-							on loan.loan_id = lp.loan_id
+						join -- reporting.james_loans loan
+                        peachy_prod.loan
+							on loan.id = lp.loan_id
                     where lp.is_next_payment = 1
                     and lp.deleted_at is null
+                    and loan.id = '703727'
                      group by lp.loan_id, lp.actual_payment_date
             ) lpd
             on lp.loan_id = lpd.loan_id and lp.actual_payment_date >= lpd.actual_payment_date
     where lp.deleted_at is null
     group by lp.loan_id
     ) total_outstanding
-		on loan.loan_id = total_outstanding.loan_id	
-        
-where loan_payment.actual_payment_date between date(date_add(subdate(current_date, 1), interval -1 month)) and subdate(current_date, 1)
-group by loan.loan_id
-		,loan.application_id
-        ,loan.original_application_id
-		,loan_payment.actual_payment_date
-		,date_format(now(), '%Y-%m-01')
-order by loan.application_id desc, loan.loan_id desc
-;
+		on loan.id = total_outstanding.loan_id	
 
+where /* loan_payment.actual_payment_date between date(date_add(subdate(current_date, 1), interval -1 month)) and subdate(current_date, 1)
+	and */ loan.id = '703727'
+group by loan.id
+		,loan.original_loan_application_id
+        ,loan_payment.actual_payment_date
+        -- ,loan.original_application_id
+		,date_format(now(), '%Y-%m-01')
+order by loan.original_loan_application_id desc, loan.id desc
+;
