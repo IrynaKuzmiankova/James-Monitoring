@@ -11,9 +11,9 @@ as -- james this month part
                 ,loan.initial_interest
                 ,loan.annual_percentage_rate
                 ,loan.no_of_payments
-                ,loan.topped_up_at
-                ,loan.extended_at
-                ,loan.arranged_rp_at
+                ,date(loan.topped_up_at) as topped_up_at
+                ,date(loan.extended_at) as extended_at
+                ,date(loan.arranged_rp_at) as arranged_rp_at
 		from peachy_prod.loan 
 			join peachy_prod.credit_score 
 				on loan.original_loan_application_id = credit_score.loan_application_id
@@ -41,9 +41,9 @@ as -- james this month part
                 ,loan.initial_interest
                 ,loan.annual_percentage_rate
                 ,loan.no_of_payments
-                ,loan.topped_up_at
-                ,loan.extended_at
-                ,loan.arranged_rp_at
+				,date(loan.topped_up_at)
+                ,date(loan.extended_at)
+                ,date(loan.arranged_rp_at)
 		union
 		-- james children part this month
 		select child_loan.id as loan_id
@@ -56,9 +56,9 @@ as -- james this month part
                 ,child_loan.initial_interest
                 ,child_loan.annual_percentage_rate
                 ,child_loan.no_of_payments
-                ,child_loan.topped_up_at
-                ,child_loan.extended_at
-                ,child_loan.arranged_rp_at
+                ,date(child_loan.topped_up_at) as topped_up_at
+                ,date(child_loan.extended_at) as extended_at
+                ,date(child_loan.arranged_rp_at) as arranged_rp_at
 		from
 			(select loan.id as loan_id
 					,loan.original_loan_application_id
@@ -88,9 +88,9 @@ as -- james this month part
                 ,child_loan.initial_interest
                 ,child_loan.annual_percentage_rate
                 ,child_loan.no_of_payments
-                ,child_loan.topped_up_at
-                ,child_loan.extended_at
-                ,child_loan.arranged_rp_at
+				,date(child_loan.topped_up_at)
+                ,date(child_loan.extended_at)
+                ,date(child_loan.arranged_rp_at)
 ;	
 
 
