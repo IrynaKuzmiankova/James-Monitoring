@@ -2,7 +2,7 @@
 create table reporting.james_loans
 as -- james this month part
 		select loan.id as loan_id
-				,loan.loan_type_id
+				,loan_type.name as loan_type
                 ,loan.original_loan_application_id as application_id
                 ,ol.original_loan_application_id as original_application_id
                 ,loan.issued_at
@@ -11,6 +11,9 @@ as -- james this month part
                 ,loan.initial_interest
                 ,loan.annual_percentage_rate
                 ,loan.no_of_payments
+                ,loan.topped_up_at
+                ,loan.extended_at
+                ,loan.arranged_rp_at
 		from peachy_prod.loan 
 			join peachy_prod.credit_score 
 				on loan.original_loan_application_id = credit_score.loan_application_id
@@ -21,13 +24,15 @@ as -- james this month part
 			join peachy_prod.loan ol
 				on loan.id = coalesce(ol.origin_loan_id, ol.id)
                 and ol.deleted_at is null
+			join peachy_prod.type as loan_type
+				on loan.loan_type_id = loan_type.id
 		where date(loan.created_at) between date_format(date(date_add(now(), interval -1 month)), '%Y-%m-01') -- first day of month
 							and last_day(date(date_add(now(), interval -1 month))) -- last day of month
 			and loan.declined_at is null
 			and loan.cancelled_at is null
 			and loan.issued_at is not null
 		group by loan.id
-				,loan.loan_type_id
+				,loan_type.name
                 ,loan.original_loan_application_id
                 ,ol.original_loan_application_id
                 ,loan.issued_at
@@ -36,10 +41,13 @@ as -- james this month part
                 ,loan.initial_interest
                 ,loan.annual_percentage_rate
                 ,loan.no_of_payments
+                ,loan.topped_up_at
+                ,loan.extended_at
+                ,loan.arranged_rp_at
 		union
 		-- james children part this month
 		select child_loan.id as loan_id
-				,child_loan.loan_type_id
+				,loan_type.name as loan_type
                 ,child_loan.original_loan_application_id as application_id
                 ,james.original_loan_application_id as original_application_id
                 ,child_loan.issued_at
@@ -48,6 +56,9 @@ as -- james this month part
                 ,child_loan.initial_interest
                 ,child_loan.annual_percentage_rate
                 ,child_loan.no_of_payments
+                ,child_loan.topped_up_at
+                ,child_loan.extended_at
+                ,child_loan.arranged_rp_at
 		from
 			(select loan.id as loan_id
 					,loan.original_loan_application_id
@@ -65,6 +76,21 @@ as -- james this month part
 					on james.loan_id = child_loan.origin_loan_id
 					and date(child_loan.created_at) between date_format(date(date_add(now(), interval -1 month)), '%Y-%m-01') -- first day of month
 							and last_day(date(date_add(now(), interval -1 month))) -- last day of month
+			join peachy_prod.type as loan_type
+				on child_loan.loan_type_id = loan_type.id
+			group by child_loan.id
+				,loan_type.name
+                ,child_loan.original_loan_application_id
+                ,james.original_loan_application_id
+                ,child_loan.issued_at
+                ,child_loan.created_at
+				,child_loan.principal
+                ,child_loan.initial_interest
+                ,child_loan.annual_percentage_rate
+                ,child_loan.no_of_payments
+                ,child_loan.topped_up_at
+                ,child_loan.extended_at
+                ,child_loan.arranged_rp_at
 ;	
 
 
