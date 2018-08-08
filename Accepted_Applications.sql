@@ -3,6 +3,7 @@
 */
 
 select  loan_list.loan_id as Loan_ID
+		,loan_list.external_id as External_ID
 		,loan_list.application_id as Application_ID
         ,loan_list.original_application_id as Original_Application_ID
 		,loan_list.issued_at as Date_of_Approval /* date of issue */
@@ -19,13 +20,13 @@ from reporting.james_loans loan_list
 			and loan_payment_first.is_first_payment = 1
             and loan_payment_first.deleted_at is null    
 group by loan_list.loan_id
+		,loan_list.external_id
 		,loan_list.application_id
-		,loan_list.original_application_id
+        ,loan_list.original_application_id
 		,loan_list.issued_at
         ,loan_list.principal
         ,loan_payment_first.actual_payment_date
         ,loan_list.no_of_payments
         ,loan_list.loan_type
-order by 2 desc
 ;			
 

@@ -3,8 +3,9 @@ JAMES monitoring scripts
 Monthly payments
 */
 
-select  loan.loan_id as Loan_Id,
-		loan.application_id as Application_ID 
+select  loan.loan_id as Loan_Id
+		,loan.external_id as External_ID
+		,loan.application_id as Application_ID 
         ,loan.original_application_id as Original_Application_Id
 		,date_format(now(), '%Y-%m-01') as Reporting_Month
         ,loan_payment.actual_payment_date as Actual_Payment_Date
@@ -49,6 +50,7 @@ from reporting.james_loans loan
             ))
         
 group by loan.loan_id
+		,loan.external_id
 		,loan.loan_type
 		,loan.application_id
         ,loan.original_application_id
