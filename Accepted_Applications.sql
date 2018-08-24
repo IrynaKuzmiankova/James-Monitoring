@@ -18,7 +18,15 @@ from reporting.james_loans loan_list
 	join peachy_prod.loan_payment loan_payment_first
 		on loan_list.loan_id = loan_payment_first.loan_id
 			and loan_payment_first.is_first_payment = 1
-            and loan_payment_first.deleted_at is null    
+            and loan_payment_first.deleted_at is null
+	where date(loan_list.created_at) between date_format(date(date_add(now(), interval -1 month)), '%Y-%m-01') -- first day of month
+							and last_day(date(date_add(now(), interval -1 month))) -- last day of month
+		
+			
+     /*   where date(loan_list.created_at) between '2018-06-01' -- first day of month
+							and '2018-06-30' -- last day of month
+				*/
+				
 group by loan_list.loan_id
 		,loan_list.external_id
 		,loan_list.application_id
