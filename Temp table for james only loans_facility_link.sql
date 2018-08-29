@@ -1,10 +1,17 @@
+truncate table reporting.james_loans
+;
+
 /* create temp table for james associated loans */
-create table reporting.james_loans
-as -- james this month part
+-- create table reporting.james_loans
+-- as -- james this month part
+insert into reporting.james_loans
 		select loan.id as loan_id
 				,loan_type.name as loan_type
                 ,jm_credit.id as external_id
-                ,loan.original_loan_application_id as application_id
+                ,case when loan.loan_type_id = 756
+					then loan.original_loan_application_id
+                    else loan.loan_application_id end                
+                as application_id                
                 ,ol.original_loan_application_id as original_application_id
                 ,loan.issued_at
                 ,loan.created_at
@@ -38,12 +45,15 @@ as -- james this month part
                 and ol.deleted_at is null
 			join peachy_prod.type as loan_type
 				on loan.loan_type_id = loan_type.id
-	/*	where date(loan.created_at) between date_format(date(date_add(now(), interval -1 month)), '%Y-%m-01') -- first day of month
+		where  date(loan.created_at) between date_format(date(date_add(now(), interval -1 month)), '%Y-%m-01') -- first day of month
 							and last_day(date(date_add(now(), interval -1 month))) -- last day of month
-			*/
-        where date(loan.created_at) between '2018-06-01' -- first day of month
+                            
+			
+     /*  where  date(loan.created_at) between '2018-06-01' -- first day of month
 							and '2018-06-30' -- last day of month
-		
+                            */
+			
+			
 			and loan.declined_at is null
 			and loan.cancelled_at is null
 			and loan.issued_at is not null
@@ -65,8 +75,8 @@ as -- james this month part
 		-- james children part this month
 		select child_loan.id as loan_id
 				,loan_type.name as loan_type
-                ,coalesce(jm_credit.id, james.external_id) as external_id
-                ,child_loan.original_loan_application_id as application_id
+                ,coalesce(jm_credit.id, james.external_id) as external_id                
+                ,child_loan.loan_application_id as application_id
                 ,james.original_loan_application_id as original_application_id
                 ,child_loan.issued_at
                 ,child_loan.created_at
@@ -105,15 +115,24 @@ as -- james this month part
 			) james
 				join peachy_prod.loan child_loan
 					on james.loan_id = child_loan.origin_loan_id
-				/*	and date(child_loan.created_at) between date_format(date(date_add(now(), interval -1 month)), '%Y-%m-01') -- first day of month
+					and child_loan.declined_at is null
+					and child_loan.cancelled_at is null
+					and child_loan.issued_at is not null
+					and date(child_loan.created_at) between date_format(date(date_add(now(), interval -1 month)), '%Y-%m-01') -- first day of month
 							and last_day(date(date_add(now(), interval -1 month))) -- last day of month
-					*/
-					and date(child_loan.created_at) between '2018-06-01' -- first day of month
-							and '2018-06-30' -- last day of month
+                            
+						
+					
+			/*	and date(child_loan.created_at) between '2018-06-01' -- first day of month
+							and '2018-06-30' -- last day of month    
+					
+				*/	
+                    
 			join peachy_prod.type as loan_type
 				on child_loan.loan_type_id = loan_type.id
 			left join peachy_prod.james_finance_application_credit_score jm_credit
 						on child_loan.original_loan_application_id = jm_credit.loan_application_id
+            
 			group by child_loan.id
 				,loan_type.name
                 ,child_loan.original_loan_application_id
@@ -129,6 +148,7 @@ as -- james this month part
                 ,date(child_loan.arranged_rp_at)
 ;	
 
-
+/*
 drop table reporting.james_loans
 ;
+*/

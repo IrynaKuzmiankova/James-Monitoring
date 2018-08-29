@@ -32,25 +32,32 @@ from reporting.james_loans loan
 	join peachy_prod.loan_payment 
 		on loan.loan_id = loan_payment.loan_id
 		and loan_payment.deleted_at is null
-        /* payment due date falls into reporting period, not paid or paid in the same reporting period  */
-        AND ((loan_payment.actual_payment_date between date(date_add(current_date, interval -1 month)) and subdate(current_date, 1)
-			and (loan_payment.paid_at_date is null or loan_payment.paid_at_date between date(date_add(current_date, interval -1 month)) and subdate(current_date, 1))
+ 
+/* payment due date falls into reporting period, not paid or paid in the same reporting period  */
+ AND ((loan_payment.actual_payment_date between date(date_add(current_date, interval -1 month)) and subdate(current_date, 1)
+			and (loan_payment.paid_at_date is null
+				or loan_payment.paid_at_date between date(date_add(current_date, interval -1 month)) and subdate(current_date, 1)
+                /* payment in reporting period, but paid after reporting period */
+                or loan_payment.paid_at_date > subdate(current_date, 1)
+            )
+		
             /* payment due date before date of top up/extension/repayment plan, the check is to exclude all payments of parent loan after child loan of listed type emerged */
-			and (loan_payment.actual_payment_date <= coalesce(loan.topped_up_at, loan.extended_at, loan.arranged_rp_at, '2999-12-31'))
+			and (least(loan_payment.actual_payment_date, loan_payment.paid_at_date) <= coalesce(loan.topped_up_at, loan.extended_at, loan.arranged_rp_at, '2999-12-31'))
 			)
             /* payment due date is out of reporting period, but paid in the reporting period */
 			or (loan_payment.paid_at_date between date(date_add(current_date, interval -1 month)) and subdate(current_date, 1)
-			and loan_payment.actual_payment_date > subdate(current_date, 1))
+			and (loan_payment.actual_payment_date < date(date_add(current_date, interval -1 month)) or loan_payment.actual_payment_date > subdate(current_date, 1)))
             /* payment before reporting period, but not yet paid, in active overdue state */
             or (loan_payment.actual_payment_date < date(date_add(current_date, interval -1 month))
-				and loan_payment.paid_at_date is null
-            ))
-        
+				and loan_payment.paid_at_date is null)            
+			)
+		
+    
 group by loan.loan_id
 		,loan.external_id
 		,loan.application_id
         ,loan.original_application_id
-		,date_format(now(), '%Y-%m-01')
+	 	,date_format(now(), '%Y-%m-01')
 		,loan.loan_type
 
 ;
